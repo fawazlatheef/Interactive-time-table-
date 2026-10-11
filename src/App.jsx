@@ -1,4 +1,3 @@
-```react
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar, User, Plus, Trash2, Share2, 
@@ -232,6 +231,19 @@ export default function App() {
     return conflicts;
   }, [schedule, selectedDay, classes, periods]);
 
+  const isConflict = (className, periodId) => {
+    const key = `${selectedDay}-${className}-${periodId}`;
+    const cell = schedule[key];
+    if (!cell || !cell.teacher) return false;
+    const code = cell.teacher.trim().toUpperCase();
+    return Boolean(teacherConflicts[periodId] && teacherConflicts[periodId][code]);
+  };
+
+  const getColorClasses = (colorId) => {
+    const found = COLOR_OPTIONS.find(c => c.id === colorId);
+    return found ? found.bg : COLOR_OPTIONS[0].bg;
+  };
+
   const openCellModal = (className, periodId) => {
     const key = `${selectedDay}-${className}-${periodId}`;
     const cell = schedule[key] || { teacher: '', color: 'indigo' };
@@ -323,6 +335,9 @@ export default function App() {
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
   };
+
+  // Keep the mobile class selection valid if classes change remotely
+  const activeMobileClass = classes.includes(selectedMobileClass) ? selectedMobileClass : classes[0];
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans pb-16">
@@ -484,7 +499,7 @@ export default function App() {
 
       <main className="max-w-7xl mx-auto px-2 sm:px-6 pt-3 space-y-3">
         {Object.keys(teacherConflicts).length > 0 && (
-          <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl p-2.5 text-xs flex items-center gap-2 shadow-xs">
+          <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl p-2.5 text-xs flex items-center gap-2 shadow-xs no-print">
             <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
             <div className="flex-1 flex flex-wrap items-center gap-1.5">
               <span className="font-bold text-rose-900 dark:text-rose-200">Teacher Conflict Detected ({selectedDay}):</span>
@@ -503,16 +518,4 @@ export default function App() {
         {viewMode === 'grid' && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
             <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-xs sm:text-sm flex items-center gap-1.5">
-                <LayoutGrid className="w-4 h-4 text-indigo-600" />
-                <span>{selectedDay} Period Matrix</span>
-              </h3>
-              <span className="text-[11px] text-slate-400">
-                Click cell to assign teacher code
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[650px]">
-                <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-700 text-xs text-slate-600 
+              <h3 className="font-bold text-sl
