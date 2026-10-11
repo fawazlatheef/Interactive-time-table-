@@ -34,7 +34,7 @@ try {
     db = getFirestore(app);
   }
 } catch (e) {
-  console.error("Firebase initialization failed:", e);
+  console.error("Firebase initialization skipped or failed:", e);
 }
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'school-timetable-app';
@@ -212,7 +212,7 @@ export default function App() {
     periods.forEach(p => {
       const teacherToClasses = {};
       classes.forEach(c => {
-        const key = selectedDay + '-' + c + '-' + p.id;
+        const key = `${selectedDay}-${c}-${p.id}`;
         const cell = schedule[key];
         if (cell && cell.teacher && cell.teacher.trim() !== '') {
           const code = cell.teacher.trim().toUpperCase();
@@ -232,7 +232,7 @@ export default function App() {
   }, [schedule, selectedDay, classes, periods]);
 
   const openCellModal = (className, periodId) => {
-    const key = selectedDay + '-' + className + '-' + periodId;
+    const key = `${selectedDay}-${className}-${periodId}`;
     const cell = schedule[key] || { teacher: '', color: 'indigo' };
     setEditingCell({ className, periodId });
     setCellForm({
@@ -245,7 +245,7 @@ export default function App() {
   const saveCell = () => {
     if (!editingCell) return;
     const { className, periodId } = editingCell;
-    const key = selectedDay + '-' + className + '-' + periodId;
+    const key = `${selectedDay}-${className}-${periodId}`;
     
     let newPresets = [...teacherPresets];
     const upperTeacher = cellForm.teacher.trim().toUpperCase();
@@ -276,7 +276,7 @@ export default function App() {
   const clearCell = () => {
     if (!editingCell) return;
     const { className, periodId } = editingCell;
-    const key = selectedDay + '-' + className + '-' + periodId;
+    const key = `${selectedDay}-${className}-${periodId}`;
     
     const updatedSchedule = { ...schedule };
     delete updatedSchedule[key];
@@ -371,7 +371,7 @@ export default function App() {
         }
       `}</style>
 
-      {/* Printable Title Header */}
+      {/* Printable Header */}
       <div className="print-header">
         <h1>School Timetable Matrix — {selectedDay}</h1>
         <p>Generated on {new Date().toLocaleDateString()} | Teacher Short Code Schedule</p>
@@ -481,9 +481,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-2 sm:px-6 pt-3 space-y-3">
-        {/* Conflict Alert */}
         {Object.keys(teacherConflicts).length > 0 && (
           <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl p-2.5 text-xs flex items-center gap-2 shadow-xs">
             <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
@@ -492,8 +490,8 @@ export default function App() {
               {Object.entries(teacherConflicts).map(([periodId, tMap]) => {
                 const pObj = periods.find(p => p.id === Number(periodId));
                 return Object.entries(tMap).map(([teacher, clsList]) => (
-                  <span key={periodId + '-' + teacher} className="px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 font-bold text-[11px] border border-rose-300 dark:border-rose-700">
-                    {teacher} in {clsList.join(' & ')} ({pObj?.name || ('P' + periodId)})
+                  <span key={`${periodId}-${teacher}`} className="px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 font-bold text-[11px] border border-rose-300 dark:border-rose-700">
+                    {teacher} in {clsList.join(' & ')} ({pObj?.name || `P${periodId}`})
                   </span>
                 ));
               })}
@@ -501,7 +499,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Matrix Grid View */}
         {viewMode === 'grid' && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
             <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -517,4 +514,4 @@ export default function App() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[650px]">
                 <thead>
-                  <tr className="bg-slate-50 
+                  <tr className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-
