@@ -212,7 +212,7 @@ export default function App() {
     periods.forEach(p => {
       const teacherToClasses = {};
       classes.forEach(c => {
-        const key = `${selectedDay}-${c}-${p.id}`;
+        const key = selectedDay + '-' + c + '-' + p.id;
         const cell = schedule[key];
         if (cell && cell.teacher && cell.teacher.trim() !== '') {
           const code = cell.teacher.trim().toUpperCase();
@@ -232,7 +232,7 @@ export default function App() {
   }, [schedule, selectedDay, classes, periods]);
 
   const openCellModal = (className, periodId) => {
-    const key = `${selectedDay}-${className}-${periodId}`;
+    const key = selectedDay + '-' + className + '-' + periodId;
     const cell = schedule[key] || { teacher: '', color: 'indigo' };
     setEditingCell({ className, periodId });
     setCellForm({
@@ -245,7 +245,7 @@ export default function App() {
   const saveCell = () => {
     if (!editingCell) return;
     const { className, periodId } = editingCell;
-    const key = `${selectedDay}-${className}-${periodId}`;
+    const key = selectedDay + '-' + className + '-' + periodId;
     
     let newPresets = [...teacherPresets];
     const upperTeacher = cellForm.teacher.trim().toUpperCase();
@@ -276,7 +276,7 @@ export default function App() {
   const clearCell = () => {
     if (!editingCell) return;
     const { className, periodId } = editingCell;
-    const key = `${selectedDay}-${className}-${periodId}`;
+    const key = selectedDay + '-' + className + '-' + periodId;
     
     const updatedSchedule = { ...schedule };
     delete updatedSchedule[key];
@@ -492,8 +492,8 @@ export default function App() {
               {Object.entries(teacherConflicts).map(([periodId, tMap]) => {
                 const pObj = periods.find(p => p.id === Number(periodId));
                 return Object.entries(tMap).map(([teacher, clsList]) => (
-                  <span key={`${periodId}-${teacher}`} className="px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 font-bold text-[11px] border border-rose-300 dark:border-rose-700">
-                    {teacher} in {clsList.join(' & ')} ({pObj?.name || `P${periodId}`})
+                  <span key={periodId + '-' + teacher} className="px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 font-bold text-[11px] border border-rose-300 dark:border-rose-700">
+                    {teacher} in {clsList.join(' & ')} ({pObj?.name || ('P' + periodId)})
                   </span>
                 ));
               })}
@@ -517,5 +517,4 @@ export default function App() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[650px]">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-900/80 b
-
+                  <tr className="bg-slate-50 
