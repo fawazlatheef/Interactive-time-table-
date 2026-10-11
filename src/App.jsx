@@ -13,7 +13,12 @@ import {
   onAuthStateChanged 
 } from 'firebase/auth';
 import { 
-// Firebase Setup
+  getFirestore, 
+  doc, 
+  onSnapshot, 
+  setDoc 
+} from 'firebase/firestore';
+
 let app, auth, db;
 try {
   let firebaseConfig = null;
@@ -57,7 +62,6 @@ const DEFAULT_PERIODS = [
   { id: 7, name: 'P7' }
 ];
 
-// All staff short codes loaded from Staff Short List
 const PERMANENT_TEACHERS = [
   'SHM', 'MKP', 'SD', 'BJS', 'RV', 'KAK', 'TJN', 'JMK', 'PVR', 'FK',
   'TKM', 'PS', 'ASK', 'PKM', 'SK', 'KTA', 'RO', 'PTH', 'AVN', 'TMS',
@@ -71,7 +75,6 @@ const TEMPORARY_TEACHERS = [
 
 const DEFAULT_TEACHERS = [...PERMANENT_TEACHERS, ...TEMPORARY_TEACHERS];
 
-// Sample schedule focusing strictly on teacher short codes
 const INITIAL_SCHEDULE = {
   'Monday-S1A-1': { teacher: 'BBK', color: 'emerald' },
   'Monday-S1A-2': { teacher: 'BBK', color: 'emerald' },
@@ -109,12 +112,10 @@ export default function App() {
   const [schedule, setSchedule] = useState(INITIAL_SCHEDULE);
   const [teacherPresets, setTeacherPresets] = useState(DEFAULT_TEACHERS);
   
-  // View mode switcher: 'grid' (Matrix) or 'mobile-cards'
   const [viewMode, setViewMode] = useState('grid'); 
   const [selectedMobileClass, setSelectedMobileClass] = useState(DEFAULT_CLASSES[0]);
 
-  // Modal & Selection state
-  const [editingCell, setEditingCell] = useState(null); // { className, periodId }
+  const [editingCell, setEditingCell] = useState(null);
   const [cellForm, setCellForm] = useState({ teacher: '', color: 'indigo' });
   const [teacherSearch, setTeacherSearch] = useState('');
   
@@ -324,7 +325,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans pb-16">
-      {}
       <style>{`
         @media print {
           body {
@@ -371,7 +371,7 @@ export default function App() {
         }
       `}</style>
 
-      {/* Printable Title Header (visible only during PDF export/printing) */}
+      {/* Printable Title Header */}
       <div className="print-header">
         <h1>School Timetable Matrix — {selectedDay}</h1>
         <p>Generated on {new Date().toLocaleDateString()} | Teacher Short Code Schedule</p>
@@ -408,7 +408,6 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-1.5">
-            {/* Download PDF Button */}
             <button
               onClick={handleDownloadPDF}
               className="p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center gap-1 transition-all"
@@ -418,7 +417,6 @@ export default function App() {
               <span className="hidden sm:inline">Download PDF</span>
             </button>
 
-            {/* View Mode Toggle */}
             <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-xl flex items-center gap-0.5">
               <button
                 onClick={() => setViewMode('grid')}
@@ -485,8 +483,7 @@ export default function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-2 sm:px-6 pt-3 space-y-3">
-
-        {/* Double-Booking Warning Alert */}
+        {/* Conflict Alert */}
         {Object.keys(teacherConflicts).length > 0 && (
           <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl p-2.5 text-xs flex items-center gap-2 shadow-xs">
             <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
@@ -504,7 +501,7 @@ export default function App() {
           </div>
         )}
 
-        {}
+        {/* Matrix Grid View */}
         {viewMode === 'grid' && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
             <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -513,4 +510,12 @@ export default function App() {
                 <span>{selectedDay} Period Matrix</span>
               </h3>
               <span className="text-[11px] text-slate-400">
-                Click 
+                Click cell to assign teacher code
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[650px]">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-900/80 b
+
