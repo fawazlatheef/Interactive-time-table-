@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar, User, Plus, Trash2, Share2, 
@@ -21,12 +20,41 @@ import {
 
 // Firebase Initialization
 let app, auth, db;
+let initError = '';
+
+// Accepts strict JSON, or the JS object snippet copied from the Firebase console
+// (unquoted keys, trailing commas, "const firebaseConfig = {...};").
+const parseFirebaseConfig = (raw) => {
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    const cleaned = raw
+      .trim()
+      .replace(/^(const|let|var)\s+\w+\s*=\s*/, '')
+      .replace(/;\s*$/, '')
+      .replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":')
+      .replace(/,\s*}/g, '}');
+    return JSON.parse(cleaned);
+  }
+};
+
 try {
   let firebaseConfig = null;
+  const env = (typeof import.meta !== 'undefined' && import.meta.env) || {};
+
   if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-    firebaseConfig = JSON.parse(__firebase_config);
-  } else if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_CONFIG) {
-    firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG);
+    firebaseConfig = parseFirebaseConfig(__firebase_config);
+  } else if (env.VITE_FIREBASE_CONFIG) {
+    firebaseConfig = parseFirebaseConfig(env.VITE_FIREBASE_CONFIG);
+  } else if (env.VITE_FIREBASE_API_KEY && env.VITE_FIREBASE_PROJECT_ID) {
+    firebaseConfig = {
+      apiKey: env.VITE_FIREBASE_API_KEY,
+      authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: env.VITE_FIREBASE_APP_ID
+    };
   }
 
   if (firebaseConfig) {
@@ -35,8 +63,18 @@ try {
     db = getFirestore(app);
   }
 } catch (e) {
+  initError = e.message || String(e);
   console.error("Firebase initialization failed:", e);
 }
+
+const SYNC_UI = {
+  connecting: { dot: 'bg-amber-500', label: 'Connecting' },
+  connected: { dot: 'bg-emerald-500', label: 'Live' },
+  'no-config': { dot: 'bg-slate-400', label: 'Local only' },
+  'config-error': { dot: 'bg-rose-500', label: 'Config error' },
+  'auth-error': { dot: 'bg-rose-500', label: 'Sign-in failed' },
+  'db-error': { dot: 'bg-rose-500', label: 'Sync error' }
+};
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'school-timetable-app';
 
@@ -127,6 +165,10 @@ export default function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
   const [toast, setToast] = useState(null);
+  const [syncState, setSyncState] = useState(
+    initError ? 'config-error' : db ? 'connecting' : 'no-config'
+  );
+  const [syncError, setSyncError] = useState(initError);
 
   const handleDownloadPDF = () => {
     window.print();
@@ -154,6 +196,8 @@ export default function App() {
           await signInAnonymously(auth);
         } catch (e) {
           console.error("Auth failed:", e);
+          setSyncState('auth-error');
+          setSyncError(e.code || e.message || String(e));
         }
       }
     };
@@ -172,6 +216,8 @@ export default function App() {
     
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       setIsSyncing(false);
+      setSyncState('connected');
+      setSyncError('');
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.classes) setClasses(data.classes);
@@ -189,20 +235,28 @@ export default function App() {
     }, (err) => {
       console.error("Firestore error:", err);
       setIsSyncing(false);
+      setSyncState('db-error');
+      setSyncError(err.code || err.message || String(err));
     });
 
     return () => unsubscribe();
   }, [user]);
 
   const saveToFirebase = async (updatedData) => {
-    if (!db || !user) return;
+    if (!db || !user) {
+      showToast("Saved on this device only (not connected)", "warning");
+      return;
+    }
     setIsSaving(true);
     try {
       const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'timetables', 'school_schedule');
-      await setDoc(docRef, updatedData, { merge: true });
+      // mergeFields replaces each listed field entirely. A plain { merge: true }
+      // deep-merges maps, so a cleared cell would never be removed in Firestore.
+      await setDoc(docRef, updatedData, { mergeFields: Object.keys(updatedData) });
       showToast("Synced to cloud", "success");
     } catch (err) {
       console.error("Error saving:", err);
+      showToast(`Sync failed: ${err.code || err.message}`, "warning");
     } finally {
       setIsSaving(false);
     }
@@ -412,10 +466,13 @@ export default function App() {
             <div>
               <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1.5">
                 School Timetable Matrix
-                {isSyncing ? (
+                {syncState === 'connecting' ? (
                   <RefreshCw className="w-3.5 h-3.5 text-amber-500 animate-spin" />
                 ) : (
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" title="Cloud Synced"></span>
+                  <span className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                    <span className={`w-2 h-2 rounded-full ${SYNC_UI[syncState].dot}`}></span>
+                    {SYNC_UI[syncState].label}
+                  </span>
                 )}
               </h1>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
@@ -499,6 +556,18 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-2 sm:px-6 pt-3 space-y-3">
+        {syncState !== 'connected' && syncState !== 'connecting' && (
+          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-2.5 text-xs flex items-start gap-2 no-print">
+            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="text-amber-900 dark:text-amber-200">
+              {syncState === 'no-config' && "Live sync is off, so changes stay on this device only. Add VITE_FIREBASE_CONFIG in Vercel project settings, then redeploy."}
+              {syncState === 'config-error' && `The Firebase config could not be read: ${syncError}`}
+              {syncState === 'auth-error' && `Sign-in to Firebase failed (${syncError}). In Firebase Authentication, enable the Anonymous provider and add this site's domain under Authorized domains.`}
+              {syncState === 'db-error' && `Firestore refused the connection (${syncError}). Check that a Firestore database exists and that your rules allow signed-in users to read and write.`}
+            </div>
+          </div>
+        )}
+
         {Object.keys(teacherConflicts).length > 0 && (
           <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl p-2.5 text-xs flex items-center gap-2 shadow-xs no-print">
             <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
