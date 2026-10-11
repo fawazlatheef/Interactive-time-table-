@@ -395,7 +395,7 @@ export default function App() {
   const activeMobileClass = classes.includes(selectedMobileClass) ? selectedMobileClass : classes[0];
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans pb-16">
+    <div style={{ overflowX: 'clip' }} className="min-h-screen w-full bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans pb-16">
       <style>{`
         @media print {
           body {
@@ -444,7 +444,7 @@ export default function App() {
 
       {/* Printable Header */}
       <div className="print-header">
-        <h1>School Timetable Matrix — {selectedDay}</h1>
+        <h1>EMEA Special Time Table — {selectedDay}</h1>
         <p>Generated on {new Date().toLocaleDateString()} | Teacher Short Code Schedule</p>
       </div>
 
@@ -458,74 +458,50 @@ export default function App() {
 
       {/* Header Bar */}
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 shadow-xs no-print">
-        <div className="max-w-7xl mx-auto px-3 py-2 sm:px-6 flex items-center justify-between gap-2">
-          <div className="flex items-center space-x-2">
-            <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-xs">
-              <Calendar className="w-5 h-5" />
+        <div className="px-3 py-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="p-1.5 bg-indigo-600 text-white rounded-lg flex-shrink-0">
+              <Calendar className="w-4 h-4" />
             </div>
-            <div>
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1.5">
-                School Timetable Matrix
-                {syncState === 'connecting' ? (
-                  <RefreshCw className="w-3.5 h-3.5 text-amber-500 animate-spin" />
-                ) : (
-                  <span className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                    <span className={`w-2 h-2 rounded-full ${SYNC_UI[syncState].dot}`}></span>
-                    {SYNC_UI[syncState].label}
-                  </span>
-                )}
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
+                EMEA Special Time Table
               </h1>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
-                Teacher Short Code Schedule
-              </p>
+              <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                {syncState === 'connecting' ? (
+                  <>
+                    <RefreshCw className="w-3 h-3 text-amber-500 animate-spin" />
+                    <span>Connecting</span>
+                  </>
+                ) : (
+                  <>
+                    <span className={`w-2 h-2 rounded-full ${SYNC_UI[syncState].dot}`}></span>
+                    <span>{SYNC_UI[syncState].label}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
               onClick={handleDownloadPDF}
-              className="p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center gap-1 transition-all"
-              title="Download or Print Timetable as PDF"
+              className="p-2 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-xl"
+              title="Download or print as PDF"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Download PDF</span>
+              <Download className="w-4 h-4" />
             </button>
-
-            <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-xl flex items-center gap-0.5">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
-                  viewMode === 'grid' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-xs' : 'text-slate-600 dark:text-slate-300'
-                }`}
-                title="Matrix View"
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-                <span>Matrix</span>
-              </button>
-              <button
-                onClick={() => setViewMode('mobile-cards')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
-                  viewMode === 'mobile-cards' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-xs' : 'text-slate-600 dark:text-slate-300'
-                }`}
-                title="Mobile Cards View"
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>Cards</span>
-              </button>
-            </div>
-
             <button
               onClick={() => setIsShareModalOpen(true)}
-              className="p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 rounded-xl flex items-center gap-1"
+              className="p-2 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 rounded-xl"
+              title="Share"
             >
-              <Share2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Share</span>
+              <Share2 className="w-4 h-4" />
             </button>
-
             <button
               onClick={() => setIsClassModalOpen(true)}
-              className="p-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-xl"
-              title="Manage Classes"
+              className="p-2 text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 rounded-xl"
+              title="Manage classes"
             >
               <Settings className="w-4 h-4" />
             </button>
@@ -534,7 +510,7 @@ export default function App() {
 
         {/* Day Selection Bar */}
         <div className="border-t border-slate-100 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/50">
-          <div className="max-w-7xl mx-auto px-3 py-1 flex space-x-1 overflow-x-auto scrollbar-none">
+          <div className="px-2 py-1 flex gap-1 overflow-x-auto scrollbar-none">
             {DAYS.map((day) => {
               const isActive = selectedDay === day;
               return (
@@ -544,7 +520,7 @@ export default function App() {
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
                     isActive
                       ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      : 'text-slate-600 dark:text-slate-300'
                   }`}
                 >
                   {day}
@@ -555,7 +531,29 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-2 sm:px-6 pt-3 space-y-3">
+
+      <main className="px-2 pt-3 space-y-3">
+        <div className="grid grid-cols-2 gap-1 bg-slate-200/70 dark:bg-slate-800 p-1 rounded-xl no-print">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-300'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            <span>Matrix</span>
+          </button>
+          <button
+            onClick={() => setViewMode('mobile-cards')}
+            className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              viewMode === 'mobile-cards' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs' : 'text-slate-600 dark:text-slate-300'
+            }`}
+          >
+            <Smartphone className="w-4 h-4" />
+            <span>Cards</span>
+          </button>
+        </div>
+
         {syncState !== 'connected' && syncState !== 'connecting' && (
           <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-2.5 text-xs flex items-start gap-2 no-print">
             <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
@@ -587,42 +585,43 @@ export default function App() {
 
         {viewMode === 'grid' && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
-            <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-xs sm:text-sm flex items-center gap-1.5">
-                <LayoutGrid className="w-4 h-4 text-indigo-600" />
-                <span>{selectedDay} Period Matrix</span>
+            <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2">
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-1.5 min-w-0">
+                <LayoutGrid className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                <span className="truncate">{selectedDay}</span>
               </h3>
-              <span className="text-[11px] text-slate-400 no-print">
-                Click cell to assign teacher code
-              </span>
+              <span className="text-[11px] text-slate-400 no-print">Tap a cell to edit</span>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[650px]">
+              <table
+                className="w-full table-fixed text-center border-collapse"
+                style={{ minWidth: `${44 + periods.length * 42}px` }}
+              >
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
-                    <th className="px-3 py-2 font-bold w-20">Class</th>
+                  <tr className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-300">
+                    <th className="w-11 px-1 py-2 font-bold">Class</th>
                     {periods.map(p => (
-                      <th key={p.id} className="px-2 py-2 font-bold text-center">{p.name}</th>
+                      <th key={p.id} className="px-0.5 py-2 font-bold">{p.name}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {classes.map(c => (
                     <tr key={c} className="border-b border-slate-100 dark:border-slate-700/60">
-                      <td className="px-3 py-2 font-bold text-xs text-slate-700 dark:text-slate-200">{c}</td>
+                      <td className="px-1 py-1 font-bold text-[11px] text-slate-700 dark:text-slate-200 truncate">{c}</td>
                       {periods.map(p => {
                         const key = `${selectedDay}-${c}-${p.id}`;
                         const cell = schedule[key];
                         const conflict = isConflict(c, p.id);
                         return (
-                          <td key={p.id} className="p-1 text-center">
+                          <td key={p.id} className="p-0.5">
                             <button
                               onClick={() => openCellModal(c, p.id)}
-                              className={`w-full min-h-[34px] px-1 py-1 rounded-lg border text-xs font-bold transition-all ${
+                              className={`w-full h-10 rounded-md border text-[11px] font-bold transition-all active:scale-95 ${
                                 cell && cell.teacher
                                   ? getColorClasses(cell.color)
-                                  : 'border-dashed border-slate-200 dark:border-slate-600 text-slate-300 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                  : 'border-dashed border-slate-300 dark:border-slate-600 text-slate-300 dark:text-slate-600'
                               } ${conflict ? 'ring-2 ring-rose-500' : ''}`}
                             >
                               {cell && cell.teacher ? cell.teacher : '+'}
