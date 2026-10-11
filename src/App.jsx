@@ -19,6 +19,7 @@ import {
   setDoc 
 } from 'firebase/firestore';
 
+// Firebase Initialization
 let app, auth, db;
 try {
   let firebaseConfig = null;
@@ -34,7 +35,7 @@ try {
     db = getFirestore(app);
   }
 } catch (e) {
-  console.error("Firebase initialization skipped or failed:", e);
+  console.error("Firebase initialization failed:", e);
 }
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'school-timetable-app';
@@ -514,4 +515,4 @@ export default function App() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[650px]">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-
+                  <tr className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-700 text-xs text-slate-600 
