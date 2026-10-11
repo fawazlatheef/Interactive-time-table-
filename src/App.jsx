@@ -38,27 +38,6 @@ const parseFirebaseConfig = (raw) => {
   }
 };
 
-const injectedApiKey = typeof __FIREBASE_API_KEY__ !== 'undefined' ? __FIREBASE_API_KEY__ : '';
-
-const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: injectedApiKey,
-  authDomain: "new-table-79dd1.firebaseapp.com",
-  projectId: "new-table-79dd1",
-  storageBucket: "new-table-79dd1.firebasestorage.app",
-  messagingSenderId: "8445954767",
-  appId: "1:8445954767:web:89a12d0ec0b1bbcc5e85ba"
-};
-
-// The apiKey can be supplied as the placeholder "process.env.apiKey"; resolve it from the `apiKey` env var at build time.
-const resolveApiKey = (config) => {
-  if (!config) return config;
-  const key = config.apiKey;
-  if (!key || /process\.env/.test(key)) {
-    return { ...config, apiKey: injectedApiKey };
-  }
-  return config;
-};
-
 try {
   let firebaseConfig = null;
   const env = (typeof import.meta !== 'undefined' && import.meta.env) || {};
@@ -76,14 +55,6 @@ try {
       messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
       appId: env.VITE_FIREBASE_APP_ID
     };
-  } else {
-    firebaseConfig = DEFAULT_FIREBASE_CONFIG;
-  }
-
-  firebaseConfig = resolveApiKey(firebaseConfig);
-
-  if (firebaseConfig && !firebaseConfig.apiKey) {
-    throw new Error('Firebase apiKey is missing. Set the "apiKey" environment variable in Vercel and redeploy.');
   }
 
   if (firebaseConfig) {
