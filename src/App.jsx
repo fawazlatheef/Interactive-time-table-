@@ -450,7 +450,7 @@ export default function App() {
   const activeMobileClass = classes.includes(selectedMobileClass) ? selectedMobileClass : classes[0];
 
   return (
-    <div style={{ overflowX: 'clip' }} className="min-h-screen w-full bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans pb-16">
+    <div style={{ overflowX: 'clip', minHeight: '100dvh' }} className="min-h-screen w-full bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans pb-16">
       <style>{`
         @media print {
           body {
@@ -461,6 +461,28 @@ export default function App() {
           }
           header, button, .no-print {
             display: none !important;
+          }
+          /* Cells are buttons: keep the ones inside the table visible, as plain text */
+          table button {
+            display: block !important;
+            width: 100% !important;
+            height: auto !important;
+            background: white !important;
+            color: #0f172a !important;
+            border: none !important;
+            box-shadow: none !important;
+            --tw-ring-shadow: 0 0 #0000 !important;
+            font-weight: 700 !important;
+            font-size: 12px !important;
+          }
+          table button.print-empty {
+            color: transparent !important;
+          }
+          .min-h-screen {
+            background: white !important;
+          }
+          table {
+            min-width: 0 !important;
           }
           .print-header {
             display: block !important;
@@ -493,6 +515,21 @@ export default function App() {
         @media screen {
           .print-header {
             display: none;
+          }
+          /* iOS Safari: stop auto-zoom on focus (inputs under 16px) and text resizing */
+          input, select, textarea {
+            font-size: 16px !important;
+          }
+          html {
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+          }
+          /* Older iPhones ignore overflow-x: clip, so also clamp the body */
+          body {
+            overflow-x: hidden;
+          }
+          button {
+            -webkit-tap-highlight-color: transparent;
           }
         }
       `}</style>
@@ -677,7 +714,7 @@ export default function App() {
                               className={`w-full h-10 rounded-md border text-[11px] font-bold transition-all active:scale-95 ${
                                 cell && cell.teacher
                                   ? getColorClasses(cell.color)
-                                  : 'border-dashed border-slate-300 dark:border-slate-600 text-slate-300 dark:text-slate-600'
+                                  : 'print-empty border-dashed border-slate-300 dark:border-slate-600 text-slate-300 dark:text-slate-600'
                               } ${conflict ? 'ring-2 ring-rose-500' : ''}`}
                             >
                               {cell && cell.teacher ? cell.teacher : '+'}
@@ -744,7 +781,7 @@ export default function App() {
       {/* Cell Edit Modal */}
       {editingCell && (
         <div className="fixed inset-0 z-40 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 no-print">
-          <div className="bg-white dark:bg-slate-800 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-800 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[85dvh] overflow-y-auto">
             <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-sm">Assign teacher</h3>
@@ -836,7 +873,7 @@ export default function App() {
       {/* Manage Classes Modal */}
       {isClassModalOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 no-print">
-          <div className="bg-white dark:bg-slate-800 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-800 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[85dvh] overflow-y-auto">
             <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <h3 className="font-bold text-sm">Manage classes</h3>
               <button onClick={() => setIsClassModalOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
