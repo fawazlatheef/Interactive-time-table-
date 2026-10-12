@@ -15,7 +15,10 @@ import {
   getFirestore, 
   doc, 
   onSnapshot, 
-  setDoc 
+  setDoc,
+  updateDoc,
+  deleteField,
+  arrayUnion
 } from 'firebase/firestore';
 
 // Firebase Initialization
@@ -70,6 +73,7 @@ try {
 const SYNC_UI = {
   connecting: { dot: 'bg-amber-500', label: 'Connecting' },
   connected: { dot: 'bg-emerald-500', label: 'Live' },
+  offline: { dot: 'bg-amber-500', label: 'Offline' },
   'no-config': { dot: 'bg-slate-400', label: 'Local only' },
   'config-error': { dot: 'bg-rose-500', label: 'Config error' },
   'auth-error': { dot: 'bg-rose-500', label: 'Sign-in failed' },
@@ -169,6 +173,9 @@ export default function App() {
     initError ? 'config-error' : db ? 'connecting' : 'no-config'
   );
   const [syncError, setSyncError] = useState(initError);
+  // True only after the cloud copy has been received from the server.
+  // Until then, edits are blocked so stale local data can never overwrite it.
+  const [serverLoaded, setServerLoaded] = useState(false);
 
   const handleDownloadPDF = () => {
     window.print();
@@ -214,17 +221,31 @@ export default function App() {
 
     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'timetables', 'school_schedule');
     
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+    const unsubscribe = onSnapshot(docRef, { includeMetadataChanges: true }, (docSnap) => {
       setIsSyncing(false);
-      setSyncState('connected');
-      setSyncError('');
+      const fromCache = docSnap.metadata.fromCache;
+
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.classes) setClasses(data.classes);
         if (data.periods) setPeriods(data.periods);
         if (data.schedule) setSchedule(data.schedule || {});
         if (data.teacherPresets) setTeacherPresets(data.teacherPresets);
-      } else {
+      }
+
+      if (fromCache) {
+        // Not confirmed by the server yet (slow or no connection). Never treat a
+        // missing document here as "empty": that could wipe the real data.
+        setSyncState(prev => (prev === 'connected' || prev === 'offline') ? 'offline' : 'connecting');
+        return;
+      }
+
+      setServerLoaded(true);
+      setSyncState('connected');
+      setSyncError('');
+
+      if (!docSnap.exists()) {
+        // Server confirmed there is no document: first run only.
         setDoc(docRef, {
           classes: DEFAULT_CLASSES,
           periods: DEFAULT_PERIODS,
@@ -253,6 +274,28 @@ export default function App() {
       // mergeFields replaces each listed field entirely. A plain { merge: true }
       // deep-merges maps, so a cleared cell would never be removed in Firestore.
       await setDoc(docRef, updatedData, { mergeFields: Object.keys(updatedData) });
+      showToast("Synced to cloud", "success");
+    } catch (err) {
+      console.error("Error saving:", err);
+      showToast(`Sync failed: ${err.code || err.message}`, "warning");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Writes one cell only (not the whole schedule), so edits from different
+  // devices never overwrite each other and stale data can't wipe the table.
+  const saveCellToFirebase = async (key, cell, newPreset) => {
+    if (!db || !user) {
+      showToast("Saved on this device only (not connected)", "warning");
+      return;
+    }
+    setIsSaving(true);
+    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'timetables', 'school_schedule');
+    try {
+      const update = { [`schedule.${key}`]: cell ? cell : deleteField() };
+      if (newPreset) update.teacherPresets = arrayUnion(newPreset);
+      await updateDoc(docRef, update);
       showToast("Synced to cloud", "success");
     } catch (err) {
       console.error("Error saving:", err);
@@ -299,7 +342,16 @@ export default function App() {
     return found ? found.bg : COLOR_OPTIONS[0].bg;
   };
 
+  const cloudNotReady = () => {
+    if (db && !serverLoaded) {
+      showToast("Still loading from the cloud. Try again in a moment.", "warning");
+      return true;
+    }
+    return false;
+  };
+
   const openCellModal = (className, periodId) => {
+    if (cloudNotReady()) return;
     const key = `${selectedDay}-${className}-${periodId}`;
     const cell = schedule[key] || { teacher: '', color: 'indigo' };
     setEditingCell({ className, periodId });
@@ -335,10 +387,11 @@ export default function App() {
     setSchedule(updatedSchedule);
     setEditingCell(null);
 
-    saveToFirebase({
-      schedule: updatedSchedule,
-      teacherPresets: newPresets
-    });
+    saveCellToFirebase(
+      key,
+      upperTeacher ? { teacher: upperTeacher, color: cellForm.color } : null,
+      upperTeacher && !teacherPresets.includes(upperTeacher) ? upperTeacher : null
+    );
   };
 
   const clearCell = () => {
@@ -352,10 +405,11 @@ export default function App() {
     setSchedule(updatedSchedule);
     setEditingCell(null);
 
-    saveToFirebase({ schedule: updatedSchedule });
+    saveCellToFirebase(key, null, null);
   };
 
   const addClass = () => {
+    if (cloudNotReady()) return;
     const trimmed = newClassName.trim().toUpperCase();
     if (!trimmed) return;
     if (classes.includes(trimmed)) {
@@ -370,6 +424,7 @@ export default function App() {
   };
 
   const removeClass = (clsName) => {
+    if (cloudNotReady()) return;
     if (classes.length <= 1) {
       showToast("Minimum 1 class required", "warning");
       return;
@@ -559,6 +614,7 @@ export default function App() {
             <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="text-amber-900 dark:text-amber-200">
               {syncState === 'no-config' && "Live sync is off, so changes stay on this device only. Add VITE_FIREBASE_CONFIG in Vercel project settings, then redeploy."}
+              {syncState === 'offline' && "You're offline. Editing is paused until the connection returns, so nothing gets overwritten."}
               {syncState === 'config-error' && `The Firebase config could not be read: ${syncError}`}
               {syncState === 'auth-error' && `Sign-in to Firebase failed (${syncError}). In Firebase Authentication, enable the Anonymous provider and add this site's domain under Authorized domains.`}
               {syncState === 'db-error' && `Firestore refused the connection (${syncError}). Check that a Firestore database exists and that your rules allow signed-in users to read and write.`}
